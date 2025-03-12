@@ -18,16 +18,24 @@ export interface VisaApplication {
   created: Date;
   updated: Date;
   shareableLink?: string;
+  extractedData?: {
+    passportNumber?: string;
+    fullName?: string;
+    dateOfBirth?: string;
+    nationality?: string;
+    panNumber?: string;
+  };
 }
 
 export interface Document {
   id: string;
   applicationId: string;
-  type: 'passport' | 'photo' | 'flight_ticket' | 'hotel_booking' | 'bank_statement' | 'other';
+  type: 'passport' | 'photo' | 'flight_ticket' | 'hotel_booking' | 'bank_statement' | 'selfie' | 'pan_card' | 'other';
   name: string;
   status: 'pending' | 'received' | 'rejected';
   url?: string;
   uploadDate?: Date;
+  extractedData?: any;
 }
 
 export interface RequiredDocument {
@@ -48,6 +56,18 @@ export const UAE_REQUIRED_DOCUMENTS: RequiredDocument[] = [
     type: 'photo',
     name: 'Passport Photo',
     description: 'Recent passport-sized photograph with white background (3.5 x 4.5 cm).',
+    required: true
+  },
+  {
+    type: 'selfie',
+    name: 'Selfie Photo',
+    description: 'Take a selfie with your webcam that will be automatically sized to 45mm x 45mm.',
+    required: true
+  },
+  {
+    type: 'pan_card',
+    name: 'PAN Card',
+    description: 'Clear scan of PAN Card (for Indian citizens only).',
     required: true
   },
   {

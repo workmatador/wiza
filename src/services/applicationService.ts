@@ -1,4 +1,3 @@
-
 import { 
   VisaApplication, 
   Customer, 
@@ -7,6 +6,7 @@ import {
   UAE_REQUIRED_DOCUMENTS 
 } from '@/types/application';
 import { v4 as uuidv4 } from 'uuid';
+import { ExtractedDocumentData } from '@/services/ocrService';
 
 // Simulate stored data with localStorage
 const getStoredApplications = (): VisaApplication[] => {
@@ -122,7 +122,12 @@ export const getRequiredDocumentsForVisaType = (type: 'UAE'): RequiredDocument[]
   return UAE_REQUIRED_DOCUMENTS;
 };
 
-export const updateDocumentStatus = (documentId: string, status: Document['status'], url?: string): Document => {
+export const updateDocumentStatus = (
+  documentId: string, 
+  status: Document['status'], 
+  url?: string,
+  extractedData?: ExtractedDocumentData
+): Document => {
   const documents = getStoredDocuments();
   const documentIndex = documents.findIndex(doc => doc.id === documentId);
   
@@ -134,10 +139,21 @@ export const updateDocumentStatus = (documentId: string, status: Document['statu
     ...documents[documentIndex],
     status,
     url,
-    uploadDate: new Date()
+    uploadDate: new Date(),
+    extractedData: extractedData || undefined
   };
   
   saveDocuments(documents);
+  
+  // If we have extracted data from a passport or PAN card, update the application
+  if (extractedData && 
+      (documents[documentIndex].type === 'passport' || 
+       documents[documentIndex].type === 'pan_card')) {
+    updateApplicationWithExtractedData(
+      documents[documentIndex].applicationId,
+      extractedData
+    );
+  }
   
   // Check if all documents are received and update application status
   const applicationId = documents[documentIndex].applicationId;
@@ -160,6 +176,49 @@ export const updateDocumentStatus = (documentId: string, status: Document['statu
   }
   
   return documents[documentIndex];
+};
+
+export const updateApplicationWithExtractedData = (
+  applicationId: string,
+  extractedData: ExtractedDocumentData
+): boolean => {
+  const applications = getStoredApplications();
+  const applicationIndex = applications.findIndex(app => app.id === applicationId);
+  
+  if (applicationIndex === -1) {
+    return false;
+  }
+  
+  // Create or update the extractedData field
+  const currentExtractedData = applications[applicationIndex].extractedData || {};
+  
+  // Update with new data
+  const updatedExtractedData = {
+    ...currentExtractedData
+  };
+  
+  if (extractedData.documentType === 'passport') {
+    if (extractedData.documentNumber) updatedExtractedData.passportNumber = extractedData.documentNumber;
+    if (extractedData.fullName) updatedExtractedData.fullName = extractedData.fullName;
+    if (extractedData.dateOfBirth) updatedExtractedData.dateOfBirth = extractedData.dateOfBirth;
+    if (extractedData.nationality) updatedExtractedData.nationality = extractedData.nationality;
+  } else if (extractedData.documentType === 'pan') {
+    if (extractedData.panNumber) updatedExtractedData.panNumber = extractedData.panNumber;
+    // If no name from passport yet, use the name from PAN
+    if (extractedData.fullName && !updatedExtractedData.fullName) {
+      updatedExtractedData.fullName = extractedData.fullName;
+    }
+  }
+  
+  // Update the application
+  applications[applicationIndex] = {
+    ...applications[applicationIndex],
+    extractedData: updatedExtractedData,
+    updated: new Date()
+  };
+  
+  saveApplications(applications);
+  return true;
 };
 
 export const updateCustomerInfo = (
@@ -201,3 +260,4 @@ export const updateCustomerInfo = (
   
   return true;
 };
+
