@@ -7,9 +7,10 @@ import { VisaApplication } from '@/types/application';
 
 interface OcrDataDisplayProps {
   application: VisaApplication;
+  showSource?: boolean;
 }
 
-const OcrDataDisplay: React.FC<OcrDataDisplayProps> = ({ application }) => {
+const OcrDataDisplay: React.FC<OcrDataDisplayProps> = ({ application, showSource = true }) => {
   // Check if there's any extracted data to display
   const hasExtractedData = application.extractedData && 
     Object.keys(application.extractedData).some(key => 
@@ -52,7 +53,7 @@ const OcrDataDisplay: React.FC<OcrDataDisplayProps> = ({ application }) => {
             <TableRow>
               <TableHead>Field</TableHead>
               <TableHead>Value</TableHead>
-              <TableHead className="w-1/4">Source</TableHead>
+              {showSource && <TableHead className="w-1/4">Source</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,12 +63,14 @@ const OcrDataDisplay: React.FC<OcrDataDisplayProps> = ({ application }) => {
                 <TableCell>
                   {extractedData?.[field.key as keyof typeof extractedData]}
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Scan className="h-3 w-3 mr-1" />
-                    {field.key === 'panNumber' ? 'PAN Card' : 'Passport'}
-                  </div>
-                </TableCell>
+                {showSource && (
+                  <TableCell>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Scan className="h-3 w-3 mr-1" />
+                      {field.key === 'panNumber' ? 'PAN Card' : 'Passport'}
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

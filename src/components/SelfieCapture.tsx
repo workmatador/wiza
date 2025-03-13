@@ -21,11 +21,20 @@ const SelfieCapture = ({ onCapture }: SelfieCaptureProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   
   const startCamera = async () => {
     try {
+      setCameraError(null);
+      
+      // Request user media with different constraints to maximize compatibility
       const userMedia = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { 
+          facingMode: "user", 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        },
+        audio: false
       });
       
       setStream(userMedia);
@@ -33,9 +42,17 @@ const SelfieCapture = ({ onCapture }: SelfieCaptureProps) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = userMedia;
+        // Wait for video to load
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(e => {
+            console.error("Video playback error:", e);
+            setCameraError("Could not start video playback. Please try again.");
+          });
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
+      setCameraError("Could not access your camera. Please ensure you've granted camera permissions.");
     }
   };
   
@@ -63,47 +80,62 @@ const SelfieCapture = ({ onCapture }: SelfieCaptureProps) => {
       canvas.height = height;
       
       // Calculate square crop dimensions from video
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
+      const videoWidth = video.videoWidth || video.clientWidth;
+      const videoHeight = video.videoHeight || video.clientHeight;
+      
+      if (!videoWidth || !videoHeight) {
+        console.error("Video dimensions not available");
+        setCameraError("Could not determine video dimensions. Please try again.");
+        return;
+      }
+      
       const size = Math.min(videoWidth, videoHeight);
       const offsetX = (videoWidth - size) / 2;
       const offsetY = (videoHeight - size) / 2;
       
       // Draw face centered in the canvas
-      context.drawImage(
-        video,
-        offsetX,               // Source X
-        offsetY,               // Source Y
-        size,                  // Source Width
-        size,                  // Source Height
-        0,                     // Destination X
-        0,                     // Destination Y
-        width,                 // Destination Width
-        height                 // Destination Height
-      );
-      
-      // Convert to data URL
-      const imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
-      setCapturedImage(imageDataURL);
-      
-      // Convert to blob and send to parent
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            onCapture(blob);
-          }
-        },
-        'image/jpeg',
-        0.9
-      );
-      
-      // Stop camera after capture
-      stopCamera();
+      try {
+        context.drawImage(
+          video,
+          offsetX,               // Source X
+          offsetY,               // Source Y
+          size,                  // Source Width
+          size,                  // Source Height
+          0,                     // Destination X
+          0,                     // Destination Y
+          width,                 // Destination Width
+          height                 // Destination Height
+        );
+        
+        // Convert to data URL
+        const imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
+        setCapturedImage(imageDataURL);
+        
+        // Convert to blob and send to parent
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              onCapture(blob);
+            } else {
+              setCameraError("Failed to process the image. Please try again.");
+            }
+          },
+          'image/jpeg',
+          0.9
+        );
+        
+        // Stop camera after capture
+        stopCamera();
+      } catch (e) {
+        console.error("Error capturing photo:", e);
+        setCameraError("Error while capturing photo. Please try again.");
+      }
     }
   };
   
   const retakePhoto = () => {
     setCapturedImage(null);
+    setCameraError(null);
     startCamera();
   };
   
@@ -132,6 +164,11 @@ const SelfieCapture = ({ onCapture }: SelfieCaptureProps) => {
             <p className="text-sm text-muted-foreground mt-2">
               Take a passport photo (45mm x 45mm)
             </p>
+            {cameraError && (
+              <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+                {cameraError}
+              </div>
+            )}
           </div>
         )}
         
@@ -141,7 +178,8 @@ const SelfieCapture = ({ onCapture }: SelfieCaptureProps) => {
               ref={videoRef} 
               autoPlay 
               playsInline 
-              className="w-full" 
+              muted
+              className="w-full"
             />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="border-4 border-white rounded-full w-48 h-48 opacity-50"></div>

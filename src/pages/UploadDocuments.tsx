@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -32,6 +31,7 @@ import { extractPassportData, extractPanCardData } from '@/services/ocrService';
 import { VisaApplication, Document, RequiredDocument } from '@/types/application';
 import { useToast } from '@/hooks/use-toast';
 import SelfieCapture from '@/components/SelfieCapture';
+import OcrDataDisplay from '@/components/OcrDataDisplay';
 
 const customerSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -167,7 +167,6 @@ const UploadDocuments = () => {
       const documentType = documents.find(d => d.id === documentId)?.type;
       let extractedData;
       
-      // Process document with OCR if applicable
       if (documentType === 'passport' || documentType === 'pan_card') {
         setProcessing(documentId);
         toast({
@@ -196,13 +195,10 @@ const UploadDocuments = () => {
         setProcessing(null);
       }
       
-      // Create a mock URL for the file (in a real app, this would be the storage URL)
       const mockUrl = URL.createObjectURL(file);
       
-      // Update document status
       updateDocumentStatus(documentId, 'received', mockUrl, extractedData);
       
-      // Update documents list
       setDocuments(prev => 
         prev.map(doc => 
           doc.id === documentId 
@@ -217,7 +213,6 @@ const UploadDocuments = () => {
         )
       );
       
-      // Refresh application data to get any OCR updates
       if (application) {
         const updatedApp = getVisaApplicationByToken(token!);
         if (updatedApp) {
@@ -252,13 +247,10 @@ const UploadDocuments = () => {
     setUploading(currentSelfieDocId);
     
     try {
-      // Create a mock URL for the blob (in a real app, this would be the storage URL)
       const mockUrl = URL.createObjectURL(blob);
       
-      // Update document status
       updateDocumentStatus(currentSelfieDocId, 'received', mockUrl);
       
-      // Update documents list
       setDocuments(prev => 
         prev.map(doc => 
           doc.id === currentSelfieDocId 
@@ -492,6 +484,8 @@ const UploadDocuments = () => {
                   </CardContent>
                 </Card>
                 
+                {application && application.extractedData && <OcrDataDisplay application={application} showSource={false} />}
+                
                 <Card className="travel-card mb-6">
                   <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
@@ -598,7 +592,6 @@ const UploadDocuments = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      // In a real app, this would view the document
                                       if (doc.url) {
                                         window.open(doc.url, '_blank');
                                       }
