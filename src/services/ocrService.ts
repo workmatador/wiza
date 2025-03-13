@@ -10,6 +10,7 @@ export interface ExtractedDocumentData {
   documentNumber?: string;
   nationality?: string;
   panNumber?: string;
+  passportNumber?: string;
 }
 
 export const extractTextFromImage = async (imageFile: File): Promise<string> => {
@@ -23,6 +24,7 @@ export const extractTextFromImage = async (imageFile: File): Promise<string> => 
     const { data } = await worker.recognize(imageDataUrl);
     await worker.terminate();
     
+    console.log("Extracted raw text:", data.text);
     return data.text;
   } catch (error) {
     console.error('OCR Error:', error);
@@ -42,11 +44,17 @@ export const extractPassportData = async (imageFile: File): Promise<ExtractedDoc
     // Extract common passport fields
     const lines = text.split('\n');
     
+    // Indian passport specific patterns
+    const indianPassportNumberPattern = /[A-Z][0-9]{7}/; // Format L1234567 (letter followed by 7 digits)
+    
+    // Try to find passport number across all lines
     for (const line of lines) {
-      // Passport number usually appears after "Passport No" or similar
-      if (line.match(/passport\s*no|document\s*no/i)) {
-        const match = line.match(/[A-Z0-9]{7,9}/i);
-        if (match) extractedData.documentNumber = match[0];
+      // Indian passport number - typically on right side of Indian passports
+      const passportMatch = line.match(indianPassportNumberPattern);
+      if (passportMatch) {
+        extractedData.passportNumber = passportMatch[0];
+        extractedData.documentNumber = passportMatch[0]; // Set both fields for backward compatibility
+        console.log("Found passport number:", passportMatch[0]);
       }
       
       // Name - usually appears after "Name" or "Surname"/"Given names" 
@@ -80,6 +88,32 @@ export const extractPassportData = async (imageFile: File): Promise<ExtractedDoc
       }
     }
     
+    // If no passport number found yet, try to find it with less restrictive pattern
+    if (!extractedData.passportNumber) {
+      // Try fallback pattern - any letter followed by 7-8 digits
+      const fallbackPatterns = [
+        /[A-Z][0-9]{7,8}/g,
+        /Passport No\.?\s*([A-Z][0-9]{7,8})/i,
+        /No\.?\s*([A-Z][0-9]{7,8})/i,
+        /Document No\.?\s*([A-Z][0-9]{7,8})/i
+      ];
+      
+      for (const pattern of fallbackPatterns) {
+        for (const line of lines) {
+          const matches = line.match(pattern);
+          if (matches) {
+            // Use the first match
+            extractedData.passportNumber = matches[0].replace(/Passport No\.?\s*|No\.?\s*|Document No\.?\s*/i, '');
+            extractedData.documentNumber = extractedData.passportNumber;
+            console.log("Found passport number with fallback pattern:", extractedData.passportNumber);
+            break;
+          }
+        }
+        if (extractedData.passportNumber) break;
+      }
+    }
+    
+    console.log("Extracted passport data:", extractedData);
     return extractedData;
   } catch (error) {
     console.error('Passport OCR Error:', error);

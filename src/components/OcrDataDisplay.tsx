@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,16 +24,27 @@ const OcrDataDisplay: React.FC<OcrDataDisplayProps> = ({ application, showSource
   // Define fields to display
   const fields = [
     { key: 'passportNumber', label: 'Passport Number' },
+    { key: 'documentNumber', label: 'Document Number' },
     { key: 'fullName', label: 'Full Name' },
     { key: 'dateOfBirth', label: 'Date of Birth' },
     { key: 'nationality', label: 'Nationality' },
     { key: 'panNumber', label: 'PAN Number' }
   ];
 
-  // Filter fields that have values
-  const availableFields = fields.filter(
+  // Filter fields that have values and remove duplicates (passport/document number)
+  let availableFields = fields.filter(
     field => extractedData?.[field.key as keyof typeof extractedData]
   );
+
+  // If both passportNumber and documentNumber are present and have the same value,
+  // only keep passportNumber
+  if (
+    extractedData?.passportNumber && 
+    extractedData?.documentNumber && 
+    extractedData.passportNumber === extractedData.documentNumber
+  ) {
+    availableFields = availableFields.filter(field => field.key !== 'documentNumber');
+  }
 
   return (
     <Card className="travel-card mb-6">
