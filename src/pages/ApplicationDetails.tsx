@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { getVisaApplicationById, getDocumentsForApplication } from '@/services/a
 import { VisaApplication, Document } from '@/types/application';
 import { PlaneTakeoff, Link as LinkIcon, Calendar, FileText, CheckCircle, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import OcrDataDisplay from '@/components/OcrDataDisplay';
 
 const ApplicationDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +31,6 @@ const ApplicationDetails = () => {
 
     loadData();
     
-    // Set up an interval to refresh data
     const intervalId = setInterval(loadData, 5000);
     
     return () => clearInterval(intervalId);
@@ -182,6 +181,8 @@ const ApplicationDetails = () => {
               </div>
             </CardContent>
           </Card>
+          
+          {application && <OcrDataDisplay application={application} />}
           
           <Card className="travel-card">
             <CardHeader className="pb-2">
