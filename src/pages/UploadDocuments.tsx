@@ -500,6 +500,7 @@ const UploadDocuments = () => {
                     <div className="space-y-6">
                       {documents.map((doc) => {
                         const requiredDoc = requiredDocuments.find(rd => rd.type === doc.type);
+                        const extractedPassportNumber = doc.extractedData?.passportNumber || doc.extractedData?.documentNumber;
                         
                         return (
                           <div key={doc.id} className="border rounded-lg p-4">
@@ -603,6 +604,16 @@ const UploadDocuments = () => {
                                 {doc.uploadDate && (
                                   <div className="text-xs text-muted-foreground mt-1">
                                     Uploaded on {formatDate(doc.uploadDate)}
+                                  </div>
+                                )}
+                                
+                                {doc.type === 'passport' && doc.extractedData && extractedPassportNumber && (
+                                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg">
+                                    <div className="flex items-center text-sm">
+                                      <Scan className="h-4 w-4 mr-2 text-travel-blue" />
+                                      <span className="font-medium">Passport No.:</span>
+                                      <span className="ml-2">{extractedPassportNumber}</span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
