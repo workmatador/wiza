@@ -1,4 +1,3 @@
-
 import { createWorker } from 'tesseract.js';
 
 export interface ExtractedDocumentData {
@@ -46,18 +45,36 @@ export const extractPassportData = async (imageFile: File): Promise<ExtractedDoc
     
     // Indian passport specific patterns
     const indianPassportNumberPattern = /[A-Z][0-9]{7}/; // Format L1234567 (letter followed by 7 digits)
+    const passportNoPattern = /Passport No\.?\s*([A-Z][0-9]{7,8})/i;
     
-    // Try to find passport number across all lines
+    // First, try to find "Passport No." specifically
     for (const line of lines) {
-      // Indian passport number - typically on right side of Indian passports
-      const passportMatch = line.match(indianPassportNumberPattern);
-      if (passportMatch) {
-        extractedData.passportNumber = passportMatch[0];
-        extractedData.documentNumber = passportMatch[0]; // Set both fields for backward compatibility
-        console.log("Found passport number:", passportMatch[0]);
+      const passportNoMatch = line.match(passportNoPattern);
+      if (passportNoMatch && passportNoMatch[1]) {
+        extractedData.passportNumber = passportNoMatch[1].trim();
+        extractedData.documentNumber = passportNoMatch[1].trim(); // Set both fields for backward compatibility
+        console.log("Found passport number with 'Passport No.' pattern:", passportNoMatch[1]);
+        break;
       }
-      
-      // Name - usually appears after "Name" or "Surname"/"Given names" 
+    }
+    
+    // If not found with "Passport No." pattern, try the standard pattern
+    if (!extractedData.passportNumber) {
+      // Try to find passport number across all lines
+      for (const line of lines) {
+        // Indian passport number - typically on right side of Indian passports
+        const passportMatch = line.match(indianPassportNumberPattern);
+        if (passportMatch) {
+          extractedData.passportNumber = passportMatch[0];
+          extractedData.documentNumber = passportMatch[0]; // Set both fields for backward compatibility
+          console.log("Found passport number:", passportMatch[0]);
+          break;
+        }
+      }
+    }
+    
+    // Name - usually appears after "Name" or "Surname"/"Given names" 
+    for (const line of lines) {
       if (line.match(/surname|given\s*names|name/i) && !extractedData.fullName) {
         const nameParts = line.split(/[:<]/);
         if (nameParts.length > 1) {
@@ -93,7 +110,6 @@ export const extractPassportData = async (imageFile: File): Promise<ExtractedDoc
       // Try fallback pattern - any letter followed by 7-8 digits
       const fallbackPatterns = [
         /[A-Z][0-9]{7,8}/g,
-        /Passport No\.?\s*([A-Z][0-9]{7,8})/i,
         /No\.?\s*([A-Z][0-9]{7,8})/i,
         /Document No\.?\s*([A-Z][0-9]{7,8})/i
       ];
@@ -103,7 +119,8 @@ export const extractPassportData = async (imageFile: File): Promise<ExtractedDoc
           const matches = line.match(pattern);
           if (matches) {
             // Use the first match
-            extractedData.passportNumber = matches[0].replace(/Passport No\.?\s*|No\.?\s*|Document No\.?\s*/i, '');
+            const matchValue = matches[1] ? matches[1] : matches[0];
+            extractedData.passportNumber = matchValue.replace(/No\.?\s*|Document No\.?\s*/i, '');
             extractedData.documentNumber = extractedData.passportNumber;
             console.log("Found passport number with fallback pattern:", extractedData.passportNumber);
             break;
