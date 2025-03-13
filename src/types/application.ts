@@ -20,6 +20,7 @@ export interface VisaApplication {
   shareableLink?: string;
   extractedData?: {
     passportNumber?: string;
+    documentNumber?: string;
     fullName?: string;
     dateOfBirth?: string;
     nationality?: string;
