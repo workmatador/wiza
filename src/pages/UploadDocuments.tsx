@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -643,7 +642,8 @@ const UploadDocuments = () => {
                 <div className="space-y-6">
                   <VisaPredictionMeter 
                     documents={documents} 
-                    requiredDocuments={requiredDocuments} 
+                    requiredDocuments={requiredDocuments}
+                    application={application} 
                   />
                   
                   <Card className="travel-card">
