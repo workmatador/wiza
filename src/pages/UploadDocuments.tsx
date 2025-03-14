@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -18,7 +19,8 @@ import {
   Mail, 
   Phone,
   Scan,
-  Camera
+  Camera,
+  AlertCircle
 } from 'lucide-react';
 import { 
   getVisaApplicationByToken, 
