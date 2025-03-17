@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Document, RequiredDocument, VisaApplication } from '@/types/application';
-import { TrendingUp, ShieldCheck, AlertCircle, Info, CalendarRange } from 'lucide-react';
+import { TrendingUp, ShieldCheck, AlertCircle, Info, CalendarRange, Check, X } from 'lucide-react';
 
 interface VisaPredictionMeterProps {
   documents: Document[];
@@ -16,6 +16,8 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
   requiredDocuments,
   application,
 }) => {
+  const [progressValue, setProgressValue] = useState(0);
+  
   // Calculate the percentage of required documents that have been uploaded
   const calculateApprovalChance = (): number => {
     if (!application) return 0;
@@ -74,6 +76,15 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
   
   const approvalChance = calculateApprovalChance();
   
+  useEffect(() => {
+    // Animate progress value
+    const timer = setTimeout(() => {
+      setProgressValue(approvalChance);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [approvalChance]);
+  
   // Check specifically if flight dates match visa dates
   const checkFlightDates = (): { match: boolean; message: string } => {
     if (!application) return { match: false, message: "No application data" };
@@ -121,6 +132,9 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
         icon: <AlertCircle className="h-5 w-5 text-red-500" />,
         text: 'Low',
         color: 'text-red-500',
+        bgColor: 'bg-red-50 dark:bg-red-900/20',
+        borderColor: 'border-red-100 dark:border-red-800',
+        textColor: 'text-red-700 dark:text-red-300',
         message: 'Several required documents are missing.',
       };
     } else if (approvalChance < 80) {
@@ -128,6 +142,9 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
         icon: <Info className="h-5 w-5 text-amber-500" />,
         text: 'Moderate',
         color: 'text-amber-500',
+        bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+        borderColor: 'border-amber-100 dark:border-amber-800',
+        textColor: 'text-amber-700 dark:text-amber-300',
         message: 'More documents needed for higher chances.',
       };
     } else {
@@ -135,6 +152,9 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
         icon: <ShieldCheck className="h-5 w-5 text-green-500" />,
         text: 'High',
         color: 'text-green-500',
+        bgColor: 'bg-green-50 dark:bg-green-900/20',
+        borderColor: 'border-green-100 dark:border-green-800',
+        textColor: 'text-green-700 dark:text-green-300',
         message: 'Your documentation is nearly complete.',
       };
     }
@@ -144,42 +164,51 @@ const VisaPredictionMeter: React.FC<VisaPredictionMeterProps> = ({
   const flightDatesCheck = checkFlightDates();
   
   return (
-    <Card className="travel-card">
+    <Card className="travel-card hover-lift animate-fade-in">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-travel-blue" />
+          <TrendingUp className="h-5 w-5 text-travel-yellow" />
           Visa Approval Prediction
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              {statusInfo.icon}
-              <span className={`ml-2 font-medium ${statusInfo.color}`}>
-                {statusInfo.text} Chances
-              </span>
+          <div className={`p-4 rounded-lg ${statusInfo.bgColor} border ${statusInfo.borderColor} animate-zoom-in`}>
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center">
+                {statusInfo.icon}
+                <span className={`ml-2 font-medium ${statusInfo.color}`}>
+                  {statusInfo.text} Chances
+                </span>
+              </div>
+              <span className="font-bold text-xl">{approvalChance}%</span>
             </div>
-            <span className="font-bold text-lg">{approvalChance}%</span>
+            
+            <div className="relative h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
+              <Progress value={progressValue} className="h-full transition-all duration-1000" />
+            </div>
+            
+            <p className={`text-sm mt-2 ${statusInfo.textColor}`}>{statusInfo.message}</p>
           </div>
-          
-          <Progress value={approvalChance} className="h-2" />
-          
-          <p className="text-sm text-muted-foreground">{statusInfo.message}</p>
           
           {/* Flight dates check */}
           {documents.some(doc => doc.type === 'flight_ticket' && doc.status === 'received') && (
-            <div className={`mt-2 p-2 rounded-md flex items-start gap-2 ${
+            <div className={`animate-slide-in p-3 rounded-lg flex items-start gap-3 ${
               flightDatesCheck.match 
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800' 
                 : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800'
             }`}>
-              <CalendarRange className={`h-4 w-4 mt-0.5 ${
-                flightDatesCheck.match ? 'text-green-500' : 'text-amber-500'
-              }`} />
+              <div className={`mt-0.5 rounded-full p-1 ${flightDatesCheck.match ? 'bg-green-100' : 'bg-amber-100'}`}>
+                {flightDatesCheck.match ? 
+                  <Check className="h-4 w-4 text-green-600" /> : 
+                  <X className="h-4 w-4 text-amber-600" />
+                }
+              </div>
               <div className="text-sm flex-1">
-                <span className="font-medium">Flight Dates: </span>
-                <span>{flightDatesCheck.message}</span>
+                <span className="font-medium block mb-0.5">Flight Dates:</span>
+                <span className={flightDatesCheck.match ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"}>
+                  {flightDatesCheck.message}
+                </span>
               </div>
             </div>
           )}
