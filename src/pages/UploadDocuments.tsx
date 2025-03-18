@@ -87,6 +87,65 @@ const UploadDocuments = () => {
     loadData();
   }, [token]);
 
+  const downloadAllDocuments = async () => {
+    if (!documentStorage.length) {
+      toast({
+        title: "No documents available",
+        description: "You haven't uploaded any documents yet",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const JSZip = await import('jszip').then(module => module.default);
+      const zip = new JSZip();
+      
+      documentStorage.forEach(doc => {
+        const documentItem = documents.find(d => d.id === doc.documentId);
+        const documentName = documentItem?.name || 'Unknown Document';
+        const cleanName = documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        
+        let extension = 'unknown';
+        if (doc.fileType.includes('jpeg') || doc.fileType.includes('jpg')) {
+          extension = 'jpg';
+        } else if (doc.fileType.includes('png')) {
+          extension = 'png';
+        } else if (doc.fileType.includes('pdf')) {
+          extension = 'pdf';
+        }
+        
+        const base64Data = doc.dataUrl.split(',')[1];
+        zip.file(`${cleanName}.${extension}`, base64Data, {base64: true});
+      });
+      
+      const content = await zip.generateAsync({type: 'blob'});
+      
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `my_visa_documents.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download started",
+        description: "Your uploaded documents are being downloaded as a zip file"
+      });
+    } catch (error) {
+      console.error('Error downloading documents:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download documents. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto text-center py-12">
@@ -332,65 +391,6 @@ const UploadDocuments = () => {
         description: "Please upload all required documents before submitting",
         variant: "destructive"
       });
-    }
-  };
-
-  const downloadAllDocuments = async () => {
-    if (!documentStorage.length) {
-      toast({
-        title: "No documents available",
-        description: "You haven't uploaded any documents yet",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setDownloading(true);
-    try {
-      const JSZip = await import('jszip').then(module => module.default);
-      const zip = new JSZip();
-      
-      documentStorage.forEach(doc => {
-        const documentItem = documents.find(d => d.id === doc.documentId);
-        const documentName = documentItem?.name || 'Unknown Document';
-        const cleanName = documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        
-        let extension = 'unknown';
-        if (doc.fileType.includes('jpeg') || doc.fileType.includes('jpg')) {
-          extension = 'jpg';
-        } else if (doc.fileType.includes('png')) {
-          extension = 'png';
-        } else if (doc.fileType.includes('pdf')) {
-          extension = 'pdf';
-        }
-        
-        const base64Data = doc.dataUrl.split(',')[1];
-        zip.file(`${cleanName}.${extension}`, base64Data, {base64: true});
-      });
-      
-      const content = await zip.generateAsync({type: 'blob'});
-      
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `my_visa_documents.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Download started",
-        description: "Your uploaded documents are being downloaded as a zip file"
-      });
-    } catch (error) {
-      console.error('Error downloading documents:', error);
-      toast({
-        title: "Download failed",
-        description: "Failed to download documents. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setDownloading(false);
     }
   };
 
@@ -836,3 +836,4 @@ const UploadDocuments = () => {
 };
 
 export default UploadDocuments;
+
