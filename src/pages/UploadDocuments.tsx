@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -20,7 +21,8 @@ import {
   Scan,
   Camera,
   AlertCircle,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { 
   getVisaApplicationByToken, 
@@ -297,10 +299,12 @@ const UploadDocuments = () => {
           )
         );
         
+        // Refresh document storage data
         if (application) {
           const updatedApp = getVisaApplicationByToken(token!);
           if (updatedApp) {
             setApplication(updatedApp);
+            setDocumentStorage(getDocumentStorageForApplication(updatedApp.id));
           }
         }
         
@@ -717,17 +721,43 @@ const UploadDocuments = () => {
                                       <FileText className="h-5 w-5 mr-2 text-travel-blue" />
                                       <span className="text-sm">Document uploaded</span>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        if (doc.url) {
-                                          window.open(doc.url, '_blank');
-                                        }
-                                      }}
-                                    >
-                                      View
-                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          if (doc.url) {
+                                            window.open(doc.url, '_blank');
+                                          }
+                                        }}
+                                      >
+                                        View
+                                      </Button>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center gap-1 text-amber-600"
+                                        onClick={() => {
+                                          // Reset document status to pending
+                                          setDocuments(prev => 
+                                            prev.map(d => 
+                                              d.id === doc.id 
+                                                ? { ...d, status: 'pending', url: undefined, uploadDate: undefined } 
+                                                : d
+                                            )
+                                          );
+                                          // Show toast
+                                          toast({
+                                            title: "Ready to replace",
+                                            description: `Please upload a new document to replace ${doc.name}`,
+                                          });
+                                        }}
+                                      >
+                                        <RefreshCw className="h-3 w-3" />
+                                        Replace
+                                      </Button>
+                                    </div>
                                   </div>
                                   {doc.uploadDate && (
                                     <div className="text-xs text-muted-foreground mt-1">
@@ -836,4 +866,3 @@ const UploadDocuments = () => {
 };
 
 export default UploadDocuments;
-
