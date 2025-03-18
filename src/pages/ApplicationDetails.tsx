@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getVisaApplicationById, getDocumentsForApplication, getDocumentStorageForApplication } from '@/services/applicationService';
-import { VisaApplication, Document, DocumentStorage } from '@/types/application';
-import { PlaneTakeoff, Link as LinkIcon, Calendar, FileText, CheckCircle, Copy, ExternalLink, Download } from 'lucide-react';
+import { getVisaApplicationById, getDocumentsForApplication } from '@/services/applicationService';
+import { VisaApplication, Document } from '@/types/application';
+import { PlaneTakeoff, Link as LinkIcon, Calendar, FileText, CheckCircle, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import OcrDataDisplay from '@/components/OcrDataDisplay';
 
@@ -14,10 +14,8 @@ const ApplicationDetails = () => {
   const { toast } = useToast();
   const [application, setApplication] = useState<VisaApplication | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [documentStorage, setDocumentStorage] = useState<DocumentStorage[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -27,7 +25,6 @@ const ApplicationDetails = () => {
       if (app) {
         setApplication(app);
         setDocuments(getDocumentsForApplication(app.id));
-        setDocumentStorage(getDocumentStorageForApplication(app.id));
       }
       setLoading(false);
     };
@@ -140,70 +137,11 @@ const ApplicationDetails = () => {
     window.open(fullLink, '_blank');
   };
 
-  const downloadAllDocuments = async () => {
-    if (!documentStorage.length) {
-      toast({
-        title: "No documents available",
-        description: "There are no documents available to download",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setDownloading(true);
-    try {
-      const JSZip = await import('jszip').then(module => module.default);
-      const zip = new JSZip();
-      
-      documentStorage.forEach(doc => {
-        const documentItem = documents.find(d => d.id === doc.documentId);
-        const documentName = documentItem?.name || 'Unknown Document';
-        const cleanName = documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        
-        let extension = 'unknown';
-        if (doc.fileType.includes('jpeg') || doc.fileType.includes('jpg')) {
-          extension = 'jpg';
-        } else if (doc.fileType.includes('png')) {
-          extension = 'png';
-        } else if (doc.fileType.includes('pdf')) {
-          extension = 'pdf';
-        }
-        
-        const base64Data = doc.dataUrl.split(',')[1];
-        zip.file(`${cleanName}_${doc.documentId}.${extension}`, base64Data, {base64: true});
-      });
-      
-      const content = await zip.generateAsync({type: 'blob'});
-      
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${application?.customerName.replace(/\s+/g, '_')}_documents.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Download started",
-        description: "Your documents are being downloaded as a zip file"
-      });
-    } catch (error) {
-      console.error('Error downloading documents:', error);
-      toast({
-        title: "Download failed",
-        description: "Failed to download documents. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
     <div className="container mx-auto max-w-4xl">
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">{application?.customerName}'s Application</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{application.customerName}'s Application</h1>
           <Button variant="outline" onClick={() => navigate('/')}>
             Back to Dashboard
           </Button>
@@ -248,23 +186,9 @@ const ApplicationDetails = () => {
           
           <Card className="travel-card">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-travel-blue" />
-                  <CardTitle>Required Documents</CardTitle>
-                </div>
-                {documentStorage.length > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={downloadAllDocuments}
-                    disabled={downloading}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    {downloading ? "Preparing..." : "Download All"}
-                  </Button>
-                )}
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-travel-blue" />
+                <CardTitle>Required Documents</CardTitle>
               </div>
               <CardDescription>
                 Documents that need to be submitted for this application

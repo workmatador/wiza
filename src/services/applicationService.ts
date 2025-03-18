@@ -3,8 +3,7 @@ import {
   Customer, 
   Document, 
   RequiredDocument, 
-  UAE_REQUIRED_DOCUMENTS,
-  DocumentStorage
+  UAE_REQUIRED_DOCUMENTS 
 } from '@/types/application';
 import { v4 as uuidv4 } from 'uuid';
 import { ExtractedDocumentData } from '@/services/ocrService';
@@ -25,11 +24,6 @@ const getStoredDocuments = (): Document[] => {
   return stored ? JSON.parse(stored) : [];
 };
 
-const getStoredDocumentStorage = (): DocumentStorage[] => {
-  const stored = localStorage.getItem('document_storage');
-  return stored ? JSON.parse(stored) : [];
-};
-
 const saveApplications = (applications: VisaApplication[]) => {
   localStorage.setItem('visa_applications', JSON.stringify(applications));
 };
@@ -40,10 +34,6 @@ const saveCustomers = (customers: Customer[]) => {
 
 const saveDocuments = (documents: Document[]) => {
   localStorage.setItem('documents', JSON.stringify(documents));
-};
-
-const saveDocumentStorage = (documentStorage: DocumentStorage[]) => {
-  localStorage.setItem('document_storage', JSON.stringify(documentStorage));
 };
 
 export const createVisaApplication = (
@@ -132,62 +122,11 @@ export const getRequiredDocumentsForVisaType = (type: 'UAE'): RequiredDocument[]
   return UAE_REQUIRED_DOCUMENTS;
 };
 
-export const storeDocumentData = (
-  documentId: string,
-  file: File,
-  dataUrl: string
-): DocumentStorage => {
-  const documents = getStoredDocuments();
-  const document = documents.find(doc => doc.id === documentId);
-  
-  if (!document) {
-    throw new Error('Document not found');
-  }
-  
-  const storage: DocumentStorage = {
-    id: uuidv4(),
-    documentId,
-    applicationId: document.applicationId,
-    fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
-    dataUrl,
-    uploadDate: new Date()
-  };
-  
-  const documentStorage = getStoredDocumentStorage();
-  documentStorage.push(storage);
-  saveDocumentStorage(documentStorage);
-  
-  return storage;
-};
-
-export const getDocumentStorageById = (storageId: string): DocumentStorage | undefined => {
-  const documentStorage = getStoredDocumentStorage();
-  return documentStorage.find(storage => storage.id === storageId);
-};
-
-export const getDocumentStorageByDocumentId = (documentId: string): DocumentStorage | undefined => {
-  const documentStorage = getStoredDocumentStorage();
-  return documentStorage.find(storage => storage.documentId === documentId);
-};
-
-export const getDocumentStorageForApplication = (applicationId: string): DocumentStorage[] => {
-  const documentStorage = getStoredDocumentStorage();
-  return documentStorage.filter(storage => storage.applicationId === applicationId);
-};
-
-export const getAllDocumentStorage = (): DocumentStorage[] => {
-  return getStoredDocumentStorage();
-};
-
 export const updateDocumentStatus = (
   documentId: string, 
   status: Document['status'], 
   url?: string,
-  extractedData?: ExtractedDocumentData,
-  file?: File,
-  dataUrl?: string
+  extractedData?: ExtractedDocumentData
 ): Document => {
   const documents = getStoredDocuments();
   const documentIndex = documents.findIndex(doc => doc.id === documentId);
@@ -205,11 +144,6 @@ export const updateDocumentStatus = (
   };
   
   saveDocuments(documents);
-  
-  // If we have a file and dataUrl, store it in the document storage
-  if (file && dataUrl) {
-    storeDocumentData(documentId, file, dataUrl);
-  }
   
   // If we have extracted data from a passport or PAN card, update the application
   if (extractedData && 
@@ -326,3 +260,4 @@ export const updateCustomerInfo = (
   
   return true;
 };
+
