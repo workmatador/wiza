@@ -19,17 +19,19 @@ import {
   Phone,
   Scan,
   Camera,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { 
   getVisaApplicationByToken, 
   getDocumentsForApplication, 
   updateDocumentStatus, 
   updateCustomerInfo, 
-  getRequiredDocumentsForVisaType 
+  getRequiredDocumentsForVisaType,
+  getDocumentStorageForApplication 
 } from '@/services/applicationService';
 import { extractPassportData, extractPanCardData } from '@/services/ocrService';
-import { VisaApplication, Document, RequiredDocument } from '@/types/application';
+import { VisaApplication, Document, RequiredDocument, DocumentStorage } from '@/types/application';
 import { useToast } from '@/hooks/use-toast';
 import SelfieCapture from '@/components/SelfieCapture';
 import OcrDataDisplay from '@/components/OcrDataDisplay';
@@ -45,6 +47,7 @@ const UploadDocuments = () => {
   const { toast } = useToast();
   const [application, setApplication] = useState<VisaApplication | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [documentStorage, setDocumentStorage] = useState<DocumentStorage[]>([]);
   const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState<'details' | 'documents'>('details');
@@ -53,6 +56,7 @@ const UploadDocuments = () => {
   const [submitted, setSubmitted] = useState(false);
   const [showSelfieCapture, setShowSelfieCapture] = useState(false);
   const [currentSelfieDocId, setCurrentSelfieDocId] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const form = useForm<z.infer<typeof customerSchema>>({
     resolver: zodResolver(customerSchema),
@@ -70,6 +74,7 @@ const UploadDocuments = () => {
       if (app) {
         setApplication(app);
         setDocuments(getDocumentsForApplication(app.id));
+        setDocumentStorage(getDocumentStorageForApplication(app.id));
         setRequiredDocuments(getRequiredDocumentsForVisaType(app.type));
         
         if (app.status !== 'pending') {
@@ -118,6 +123,21 @@ const UploadDocuments = () => {
             Thank you for submitting your documents for your UAE visa application. 
             Your travel agent will review your documents and contact you if any additional information is needed.
           </p>
+          
+          {documentStorage.length > 0 && (
+            <div className="mb-6">
+              <Button 
+                onClick={downloadAllDocuments} 
+                variant="outline" 
+                disabled={downloading}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {downloading ? "Preparing..." : "Download All Documents"}
+              </Button>
+            </div>
+          )}
+          
           <div className="text-sm text-muted-foreground">
             You may close this window now.
           </div>
@@ -315,6 +335,65 @@ const UploadDocuments = () => {
     }
   };
 
+  const downloadAllDocuments = async () => {
+    if (!documentStorage.length) {
+      toast({
+        title: "No documents available",
+        description: "You haven't uploaded any documents yet",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const JSZip = await import('jszip').then(module => module.default);
+      const zip = new JSZip();
+      
+      documentStorage.forEach(doc => {
+        const documentItem = documents.find(d => d.id === doc.documentId);
+        const documentName = documentItem?.name || 'Unknown Document';
+        const cleanName = documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        
+        let extension = 'unknown';
+        if (doc.fileType.includes('jpeg') || doc.fileType.includes('jpg')) {
+          extension = 'jpg';
+        } else if (doc.fileType.includes('png')) {
+          extension = 'png';
+        } else if (doc.fileType.includes('pdf')) {
+          extension = 'pdf';
+        }
+        
+        const base64Data = doc.dataUrl.split(',')[1];
+        zip.file(`${cleanName}.${extension}`, base64Data, {base64: true});
+      });
+      
+      const content = await zip.generateAsync({type: 'blob'});
+      
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `my_visa_documents.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download started",
+        description: "Your uploaded documents are being downloaded as a zip file"
+      });
+    } catch (error) {
+      console.error('Error downloading documents:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download documents. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flight-pattern">
       <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -357,6 +436,21 @@ const UploadDocuments = () => {
                 Thank you for submitting your documents for your UAE visa application. 
                 Your travel agent will review your documents and contact you if any additional information is needed.
               </p>
+              
+              {documentStorage.length > 0 && (
+                <div className="mb-6">
+                  <Button 
+                    onClick={downloadAllDocuments} 
+                    variant="outline" 
+                    disabled={downloading}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {downloading ? "Preparing..." : "Download All Documents"}
+                  </Button>
+                </div>
+              )}
+              
               <div className="text-sm text-muted-foreground">
                 You may close this window now.
               </div>
@@ -505,13 +599,30 @@ const UploadDocuments = () => {
                   
                   <Card className="travel-card">
                     <CardHeader>
-                      <CardTitle className="text-xl flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-travel-blue" />
-                        Required Documents
-                      </CardTitle>
-                      <CardDescription>
-                        Please upload the following documents for your visa application
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-xl flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-travel-blue" />
+                            Required Documents
+                          </CardTitle>
+                          <CardDescription>
+                            Please upload the following documents for your visa application
+                          </CardDescription>
+                        </div>
+                        
+                        {documents.some(doc => doc.status === 'received') && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={downloadAllDocuments}
+                            disabled={downloading}
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            {downloading ? "Preparing..." : "Download"}
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
