@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +27,6 @@ const Dashboard = () => {
     
     loadApplications();
     
-    // Set up an interval to refresh data
     const intervalId = setInterval(loadApplications, 5000);
     
     return () => clearInterval(intervalId);
@@ -101,7 +99,7 @@ const Dashboard = () => {
           </p>
         </div>
         <Button asChild className="mb-4 md:mb-0 bg-travel-yellow hover:bg-travel-darkYellow">
-          <Link to="/create">
+          <Link to="/create-application">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Application
           </Link>
@@ -167,7 +165,7 @@ const Dashboard = () => {
               Create your first visa application to get started tracking documents and managing the visa process
             </p>
             <Button asChild className="bg-travel-yellow hover:bg-travel-darkYellow">
-              <Link to="/create">
+              <Link to="/create-application">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Application
               </Link>

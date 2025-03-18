@@ -33,9 +33,10 @@ const Sidebar = () => {
   };
 
   const sidebarItems = [
-    { path: '/', label: 'Dashboard', icon: Layers },
-    { path: '/applications', label: 'Applications', icon: FileText },
-    { path: '/customers', label: 'Customers', icon: Users },
+    { path: '/', label: 'Home', icon: Layers },
+    { path: '/dashboard', label: 'Dashboard', icon: FileText },
+    { path: '/create-application', label: 'Create Application', icon: PlusCircle },
+    { path: '/documents', label: 'Documents', icon: Users },
   ];
 
   const settingsItems = [
