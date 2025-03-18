@@ -33,10 +33,9 @@ const Sidebar = () => {
   };
 
   const sidebarItems = [
-    { path: '/', label: 'Home', icon: Layers },
-    { path: '/dashboard', label: 'Dashboard', icon: FileText },
-    { path: '/create-application', label: 'Create Application', icon: PlusCircle },
-    { path: '/documents', label: 'Documents', icon: Users },
+    { path: '/', label: 'Dashboard', icon: Layers },
+    { path: '/applications', label: 'Applications', icon: FileText },
+    { path: '/customers', label: 'Customers', icon: Users },
   ];
 
   const settingsItems = [
@@ -49,7 +48,7 @@ const Sidebar = () => {
       <SidebarHeader className="flex items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2 text-white">
           <PlaneTakeoff className="h-6 w-6" />
-          <span className="text-lg font-bold">Wiza</span>
+          <span className="text-lg font-bold">VisaDocs</span>
         </Link>
         <SidebarTrigger>
           <ChevronLeft className="h-5 w-5" />
@@ -105,7 +104,7 @@ const Sidebar = () => {
       </SidebarContent>
       <SidebarFooter className="px-4 py-4">
         <div className="text-xs text-white/70">
-          © 2023 Wiza
+          © 2023 VisaDocs
         </div>
       </SidebarFooter>
     </SidebarContainer>

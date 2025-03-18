@@ -1,4 +1,3 @@
-
 import { 
   VisaApplication, 
   Customer, 
@@ -145,15 +144,6 @@ export const storeDocumentData = (
     throw new Error('Document not found');
   }
   
-  // Check if there's an existing storage entry and remove it (for replacement)
-  const documentStorage = getStoredDocumentStorage();
-  const existingIndex = documentStorage.findIndex(storage => storage.documentId === documentId);
-  
-  if (existingIndex !== -1) {
-    // Remove existing document storage
-    documentStorage.splice(existingIndex, 1);
-  }
-  
   const storage: DocumentStorage = {
     id: uuidv4(),
     documentId,
@@ -165,6 +155,7 @@ export const storeDocumentData = (
     uploadDate: new Date()
   };
   
+  const documentStorage = getStoredDocumentStorage();
   documentStorage.push(storage);
   saveDocumentStorage(documentStorage);
   
@@ -205,31 +196,23 @@ export const updateDocumentStatus = (
     throw new Error('Document not found');
   }
   
-  // Update the document status
   documents[documentIndex] = {
     ...documents[documentIndex],
     status,
     url,
-    uploadDate: status === 'received' ? new Date() : undefined,
-    extractedData: status === 'received' ? (extractedData || documents[documentIndex].extractedData) : undefined
+    uploadDate: new Date(),
+    extractedData: extractedData || undefined
   };
   
   saveDocuments(documents);
   
   // If we have a file and dataUrl, store it in the document storage
-  if (file && dataUrl && status === 'received') {
+  if (file && dataUrl) {
     storeDocumentData(documentId, file, dataUrl);
   }
   
-  // If document status is pending (being replaced), remove it from storage
-  if (status === 'pending') {
-    const documentStorage = getStoredDocumentStorage();
-    const updatedStorage = documentStorage.filter(storage => storage.documentId !== documentId);
-    saveDocumentStorage(updatedStorage);
-  }
-  
   // If we have extracted data from a passport or PAN card, update the application
-  if (extractedData && status === 'received' &&
+  if (extractedData && 
       (documents[documentIndex].type === 'passport' || 
        documents[documentIndex].type === 'pan_card')) {
     updateApplicationWithExtractedData(

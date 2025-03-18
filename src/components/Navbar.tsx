@@ -24,7 +24,7 @@ const Navbar = () => {
             <div className="bg-travel-yellow text-white p-1.5 rounded-md">
               <PlaneTakeoff size={20} />
             </div>
-            <span>Wiza</span>
+            <span>VisaDocs</span>
           </Link>
         </div>
         <div className="flex items-center gap-4">
