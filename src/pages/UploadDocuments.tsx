@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -60,35 +59,6 @@ const UploadDocuments = () => {
   const [currentSelfieDocId, setCurrentSelfieDocId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
-  const form = useForm<z.infer<typeof customerSchema>>({
-    resolver: zodResolver(customerSchema),
-    defaultValues: {
-      email: "",
-      phone: "",
-    },
-  });
-
-  useEffect(() => {
-    if (!token) return;
-
-    const loadData = () => {
-      const app = getVisaApplicationByToken(token);
-      if (app) {
-        setApplication(app);
-        setDocuments(getDocumentsForApplication(app.id));
-        setDocumentStorage(getDocumentStorageForApplication(app.id));
-        setRequiredDocuments(getRequiredDocumentsForVisaType(app.type));
-        
-        if (app.status !== 'pending') {
-          setStage('documents');
-        }
-      }
-      setLoading(false);
-    };
-
-    loadData();
-  }, [token]);
-
   const downloadAllDocuments = async () => {
     if (!documentStorage.length) {
       toast({
@@ -148,64 +118,34 @@ const UploadDocuments = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto text-center py-12">
-        <p>Loading visa application...</p>
-      </div>
-    );
-  }
+  const form = useForm<z.infer<typeof customerSchema>>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: {
+      email: "",
+      phone: "",
+    },
+  });
 
-  if (!application || !token) {
-    return (
-      <div className="container mx-auto max-w-2xl text-center py-12">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Invalid Link</h2>
-          <p className="mb-4">This document collection link is invalid or has expired.</p>
-          <p className="text-sm text-muted-foreground">
-            Please contact your travel agent for a new link.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!token) return;
 
-  if (submitted) {
-    return (
-      <div className="container mx-auto max-w-2xl text-center py-12">
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">
-            Documents Submitted Successfully
-          </h2>
-          <p className="mb-6">
-            Thank you for submitting your documents for your UAE visa application. 
-            Your travel agent will review your documents and contact you if any additional information is needed.
-          </p>
-          
-          {documentStorage.length > 0 && (
-            <div className="mb-6">
-              <Button 
-                onClick={downloadAllDocuments} 
-                variant="outline" 
-                disabled={downloading}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {downloading ? "Preparing..." : "Download All Documents"}
-              </Button>
-            </div>
-          )}
-          
-          <div className="text-sm text-muted-foreground">
-            You may close this window now.
-          </div>
-        </div>
-      </div>
-    );
-  }
+    const loadData = () => {
+      const app = getVisaApplicationByToken(token);
+      if (app) {
+        setApplication(app);
+        setDocuments(getDocumentsForApplication(app.id));
+        setDocumentStorage(getDocumentStorageForApplication(app.id));
+        setRequiredDocuments(getRequiredDocumentsForVisaType(app.type));
+        
+        if (app.status !== 'pending') {
+          setStage('documents');
+        }
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, [token]);
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('en-US', {

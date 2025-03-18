@@ -48,7 +48,7 @@ const Sidebar = () => {
       <SidebarHeader className="flex items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2 text-white">
           <PlaneTakeoff className="h-6 w-6" />
-          <span className="text-lg font-bold">VisaDocs</span>
+          <span className="text-lg font-bold">Wiza</span>
         </Link>
         <SidebarTrigger>
           <ChevronLeft className="h-5 w-5" />
@@ -104,7 +104,7 @@ const Sidebar = () => {
       </SidebarContent>
       <SidebarFooter className="px-4 py-4">
         <div className="text-xs text-white/70">
-          © 2023 VisaDocs
+          © 2023 Wiza
         </div>
       </SidebarFooter>
     </SidebarContainer>
