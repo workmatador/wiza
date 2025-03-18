@@ -197,35 +197,50 @@ const UploadDocuments = () => {
         setProcessing(null);
       }
       
-      const mockUrl = URL.createObjectURL(file);
-      
-      updateDocumentStatus(documentId, 'received', mockUrl, extractedData);
-      
-      setDocuments(prev => 
-        prev.map(doc => 
-          doc.id === documentId 
-            ? { 
-                ...doc, 
-                status: 'received' as const, 
-                url: mockUrl, 
-                uploadDate: new Date(),
-                extractedData: extractedData || undefined
-              } 
-            : doc
-        )
-      );
-      
-      if (application) {
-        const updatedApp = getVisaApplicationByToken(token!);
-        if (updatedApp) {
-          setApplication(updatedApp);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        const mockUrl = URL.createObjectURL(file);
+        
+        updateDocumentStatus(documentId, 'received', mockUrl, extractedData, file, dataUrl);
+        
+        setDocuments(prev => 
+          prev.map(doc => 
+            doc.id === documentId 
+              ? { 
+                  ...doc, 
+                  status: 'received' as const, 
+                  url: mockUrl, 
+                  uploadDate: new Date(),
+                  extractedData: extractedData || undefined
+                } 
+              : doc
+          )
+        );
+        
+        if (application) {
+          const updatedApp = getVisaApplicationByToken(token!);
+          if (updatedApp) {
+            setApplication(updatedApp);
+          }
         }
-      }
+        
+        toast({
+          title: "Upload complete",
+          description: `${file.name} has been uploaded successfully`
+        });
+      };
       
-      toast({
-        title: "Upload complete",
-        description: `${file.name} has been uploaded successfully`
-      });
+      reader.onerror = () => {
+        toast({
+          title: "Upload failed",
+          description: "Failed to process the file. Please try again.",
+          variant: "destructive"
+        });
+        setUploading(null);
+      };
+      
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading file:', error);
       toast({
@@ -233,7 +248,6 @@ const UploadDocuments = () => {
         description: "Failed to upload the file. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setUploading(null);
     }
   };

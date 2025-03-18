@@ -39,6 +39,17 @@ export interface Document {
   extractedData?: any;
 }
 
+export interface DocumentStorage {
+  id: string;
+  documentId: string;
+  applicationId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  dataUrl: string;
+  uploadDate: Date;
+}
+
 export interface RequiredDocument {
   type: Document['type'];
   name: string;
