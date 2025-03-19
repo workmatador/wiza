@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getVisaApplicationById, getDocumentsForApplication } from '@/services/applicationService';
 import { VisaApplication, Document } from '@/types/application';
-import { PlaneTakeoff, Link as LinkIcon, Calendar, FileText, CheckCircle, Copy, ExternalLink } from 'lucide-react';
+import { PlaneTakeoff, Link as LinkIcon, Calendar, FileText, CheckCircle, Copy, ExternalLink, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import OcrDataDisplay from '@/components/OcrDataDisplay';
 
@@ -136,6 +137,37 @@ const ApplicationDetails = () => {
     const fullLink = `${origin}${application.shareableLink}`;
     window.open(fullLink, '_blank');
   };
+  
+  const downloadAllDocuments = () => {
+    const uploadedDocs = documents.filter(doc => doc.status === 'received' && doc.url);
+    
+    if (uploadedDocs.length === 0) {
+      toast({
+        title: "No documents to download",
+        description: "There are no uploaded documents available",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create a zip file of all documents
+    toast({
+      title: "Downloading documents",
+      description: "Starting download of all documents"
+    });
+    
+    // Since this is a demo, we'll just open each document in a new tab
+    uploadedDocs.forEach(doc => {
+      if (doc.url) {
+        window.open(doc.url, '_blank');
+      }
+    });
+    
+    toast({
+      title: "Download initiated",
+      description: `Opening ${uploadedDocs.length} documents in new tabs`
+    });
+  };
 
   return (
     <div className="container mx-auto max-w-4xl">
@@ -186,9 +218,22 @@ const ApplicationDetails = () => {
           
           <Card className="travel-card">
             <CardHeader className="pb-2">
-              <div className="flex items-center space-x-2">
-                <FileText className="h-5 w-5 text-travel-blue" />
-                <CardTitle>Required Documents</CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-travel-blue" />
+                  <CardTitle>Required Documents</CardTitle>
+                </div>
+                {documents.some(doc => doc.status === 'received') && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={downloadAllDocuments}
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download All</span>
+                  </Button>
+                )}
               </div>
               <CardDescription>
                 Documents that need to be submitted for this application
